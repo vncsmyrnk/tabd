@@ -3,7 +3,7 @@ OUTPUT = $(SRCDIR)/build
 
 GO_SRC = $(shell find . -type f -name '*.go')
 
-TARGET = $(OUTPUT)/tabd
+TARGET = $(OUTPUT)/seman
 
 PREFIX ?= /usr
 DESTDIR ?=
@@ -30,7 +30,7 @@ $(TARGET): $(GO_SRC)
 	$(GO_ENV) $(GO) build \
 		$(GO_FLAGS) \
 		-ldflags="$(GO_LDFLAGS)" \
-		-o $@ ./cmd/tabd/main.go
+		-o $@ ./cmd/seman/main.go
 
 .PHONY: clean
 clean:
@@ -43,7 +43,7 @@ install: all
 
 .PHONY: uninstall
 uninstall:
-	rm -rf $(DESTDIR)$(BINDIR)/tabd
+	rm -rf $(DESTDIR)$(BINDIR)/seman
 
 .PHONY: check
 check: $(GO_SRC)

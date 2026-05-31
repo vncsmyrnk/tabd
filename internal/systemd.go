@@ -70,7 +70,7 @@ func unlockVaultWithFIFO(ctx context.Context, password string) error {
 	defer conn.Close()
 
 	resChan := make(chan string)
-	jobID, err := conn.StartUnitContext(ctx, "tabd-vault.mount", "replace", resChan)
+	jobID, err := conn.StartUnitContext(ctx, "seman-vault.mount", "replace", resChan)
 	if err != nil {
 		return fmt.Errorf("failed to queue start job: %w", err)
 	}
@@ -110,7 +110,7 @@ func (s Systemd) LockVault(ctx context.Context) error {
 
 	resChan := make(chan string)
 
-	jobID, err := conn.StopUnitContext(ctx, "tabd-vault.mount", "replace", resChan)
+	jobID, err := conn.StopUnitContext(ctx, "seman-vault.mount", "replace", resChan)
 	if err != nil {
 		log.Fatalf("failed to request unit stop: %v", err)
 	}

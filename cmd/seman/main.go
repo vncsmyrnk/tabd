@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"tabd/internal"
+	"seman/internal"
 
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -18,7 +18,7 @@ func main() {
 	debug := flag.BoolP("debug", "d", false, "Prints useful debug info")
 
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "Usage: tabd <subcommand> [FLAGS]",
+		fmt.Fprintln(os.Stderr, "Usage: seman <subcommand> [FLAGS]",
 			"\n\nCommands:\n", " service")
 		fmt.Fprintln(os.Stderr, "\nFlags:")
 		flag.PrintDefaults()

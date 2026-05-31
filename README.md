@@ -1,6 +1,6 @@
 [![contributions](https://img.shields.io/badge/contributions-welcome-brightgreen?labelColor=384047&color=33cb56)](https://github.com/vncsmyrnk/shell-utils/issues)
 
-# tabd
+# seman
 
 Service manager configuration generator for mouting and unmouting encrypted LUKS devices.
 
