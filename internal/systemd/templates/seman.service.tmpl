@@ -1,0 +1,12 @@
+# vim: ft=toml:
+
+[Unit]
+Description=Unlock and mounts seman vault
+StopWhenUnneeded=true
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/systemd/systemd-cryptsetup attach seman-vault-{{.Name}} {{.FilePath}} /dev/shm/vault-fifo luks,tries=1
+
+ExecStop=/usr/lib/systemd/systemd-cryptsetup detach seman-vault-{{.Name}}

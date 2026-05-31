@@ -1,0 +1,15 @@
+# vim: ft=toml:
+
+[Unit]
+Description=Mount vault
+Requires=seman-vault-{{.Name}}.service
+After=seman-vault-{{.Name}}.service
+
+[Mount]
+What=/dev/mapper/seman-vault-{{.Name}}
+Where={{.MountPoint}}
+Type=ext4
+Options=defaults
+
+[Install]
+WantedBy=multi-user.target

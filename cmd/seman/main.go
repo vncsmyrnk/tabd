@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"seman/internal"
+	"seman/internal/systemd"
 
 	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
@@ -32,6 +33,13 @@ func main() {
 	}
 	flag.CommandLine.AddFlagSet(serviceCmd)
 
+	generateCmd := flag.NewFlagSet("generate", flag.ExitOnError)
+	generateCmd.AddFlagSet(flag.CommandLine)
+	generateCmd.Usage = func() {
+		fmt.Fprint(os.Stderr, "")
+	}
+	flag.CommandLine.AddFlagSet(generateCmd)
+
 	flag.Parse()
 	if flag.NArg() == 0 {
 		flag.Usage()
@@ -41,7 +49,7 @@ func main() {
 	serviceManager := func() internal.Backend {
 		switch *backend {
 		case "systemd":
-			return internal.Systemd{}
+			return systemd.Systemd{}
 		}
 		os.Exit(1)
 		return nil
@@ -54,11 +62,11 @@ func main() {
 
 	switch os.Args[1] {
 	case "service":
-		if len(os.Args) < 3 {
+		if len(os.Args) < 4 {
 			os.Exit(1)
 		}
 		switch os.Args[2] {
-		case "up":
+		case "start":
 			fmt.Print("Vault password: ")
 			passwordBytes, err := term.ReadPassword(int(os.Stdin.Fd()))
 			if err != nil {
@@ -67,17 +75,29 @@ func main() {
 			}
 
 			fmt.Println()
-			err = serviceManager.UnlockVault(ctx, string(passwordBytes))
+			err = serviceManager.UnlockVault(ctx, string(passwordBytes), os.Args[3])
 			if err != nil {
 				log.Fatal(err)
 			}
-		case "down":
-			err := serviceManager.LockVault(ctx)
+		case "stop":
+			err := serviceManager.LockVault(ctx, os.Args[3])
 			if err != nil {
 				log.Fatal(err)
 			}
 		default:
 			os.Exit(1)
+		}
+	case "generate":
+		if len(os.Args) < 4 {
+			os.Exit(1)
+		}
+		err := serviceManager.GenerateService(ctx, internal.Options{
+			Name:     os.Args[2],
+			FilePath: os.Args[3],
+			StowPath: os.ExpandEnv("$HOME"),
+		})
+		if err != nil {
+			log.Fatal(err)
 		}
 	default:
 		flag.Usage()

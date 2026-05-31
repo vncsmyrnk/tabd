@@ -1,29 +1,38 @@
-package internal
+package systemd
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"syscall"
+
+	"seman/internal"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 	log "github.com/sirupsen/logrus"
 )
 
+//go:embed templates/*.tmpl
+var templateFS embed.FS
+
 type Systemd struct{}
 
-var _ Backend = Systemd{}
+var _ internal.Backend = Systemd{}
 
-var SystemdCryptsetupFIFOAuth = "/dev/shm/vault-fifo"
+var (
+	CryptsetupFIFOAuth = "/dev/shm/vault-fifo"
+	ServicePath        = "/etc/systemd/system"
+)
 
-func (s Systemd) UnlockVault(ctx context.Context, password string) error {
-	return unlockVaultWithFIFO(ctx, password)
+func (s Systemd) UnlockVault(ctx context.Context, vault, password string) error {
+	return unlockVaultWithFIFO(ctx, vault, password)
 }
 
-func unlockVaultWithFIFO(ctx context.Context, password string) error {
-	fifoPath := SystemdCryptsetupFIFOAuth
-
-	err := os.Remove(fifoPath)
+func unlockVaultWithFIFO(ctx context.Context, vault, password string) error {
+	fifoPath := CryptsetupFIFOAuth
+	err := os.RemoveAll(fifoPath)
 	if err != nil {
 		return err
 	}
@@ -69,8 +78,13 @@ func unlockVaultWithFIFO(ctx context.Context, password string) error {
 	}
 	defer conn.Close()
 
+	mountServiceName, err := vaultMountServiceFileBase(vault)
+	if err != nil {
+		return err
+	}
+
 	resChan := make(chan string)
-	jobID, err := conn.StartUnitContext(ctx, "seman-vault.mount", "replace", resChan)
+	jobID, err := conn.StartUnitContext(ctx, mountServiceName, "replace", resChan)
 	if err != nil {
 		return fmt.Errorf("failed to queue start job: %w", err)
 	}
@@ -101,16 +115,32 @@ func unlockVaultWithFIFO(ctx context.Context, password string) error {
 	return nil
 }
 
-func (s Systemd) LockVault(ctx context.Context) error {
+func vaultMountServiceFileBase(vault string) (string, error) {
+	matches, err := filepath.Glob(filepath.Join(internal.SystemdDataDir(), vault, "*.mount"))
+	if err != nil {
+		return "", err
+	}
+	if len(matches) == 0 {
+		return "", fmt.Errorf("failed to file mount service file")
+	}
+
+	return filepath.Base(matches[0]), nil
+}
+
+func (s Systemd) LockVault(ctx context.Context, vault string) error {
 	conn, err := dbus.NewSystemConnectionContext(ctx)
 	if err != nil {
 		log.Fatalf("Failed to connect to systemd D-Bus: %v", err)
 	}
 	defer conn.Close()
 
-	resChan := make(chan string)
+	mountServiceName, err := vaultMountServiceFileBase(vault)
+	if err != nil {
+		return err
+	}
 
-	jobID, err := conn.StopUnitContext(ctx, "seman-vault.mount", "replace", resChan)
+	resChan := make(chan string)
+	jobID, err := conn.StopUnitContext(ctx, mountServiceName, "replace", resChan)
 	if err != nil {
 		log.Fatalf("failed to request unit stop: %v", err)
 	}
@@ -123,5 +153,36 @@ func (s Systemd) LockVault(ctx context.Context) error {
 	} else {
 		return fmt.Errorf("decryption failed or systemd job exited with status: %s", result)
 	}
+	return nil
+}
+
+func (s Systemd) GenerateService(_ context.Context, options internal.Options) error {
+	servicePath := filepath.Join(internal.SystemdDataDir(), options.Name)
+	err := os.MkdirAll(servicePath, 0755)
+	if err != nil {
+		return err
+	}
+
+	if options.MountPoint == "" {
+		options.MountPoint = filepath.Join(servicePath, "mnt")
+	}
+
+	err = generateServiceFile(options)
+	if err != nil {
+		return err
+	}
+
+	err = generateMountFile(options)
+	if err != nil {
+		return err
+	}
+
+	if options.StowPath != "" {
+		err = generateStowFile(options)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

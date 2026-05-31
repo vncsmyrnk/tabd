@@ -1,0 +1,14 @@
+# vim: ft=toml:
+
+[Unit]
+Description=Stow device contents
+Requires={{.MountUnitName}}
+After={{.MountUnitName}}
+
+[Service]
+Type=oneshot
+
+ExecStart=/usr/bin/env stow -d {{.MountPoint}} -t {{.StowPath}} .
+
+ExecStopPre=/bin/sh -c '! fuser -s -m {{.MountPoint}}'
+ExecStop=/usr/bin/env stow -D -d {{.MountPoint}} -t {{.StowPath}} .
