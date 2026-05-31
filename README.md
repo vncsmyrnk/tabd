@@ -10,4 +10,5 @@ Service manager configuration generator for mouting and unmouting encrypted LUKS
 
 - [ ] Service manager wrapper for systemd
 - [ ] Service manager configuration generator for systemd
+- [ ] Service manager configuration apply for systemd
 - [ ] Document service manager interface for other backends
