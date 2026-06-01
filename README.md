@@ -12,3 +12,9 @@ Service manager configuration generator for mouting and unmouting encrypted LUKS
 - [ ] Service manager configuration generator for systemd
 - [ ] Service manager configuration apply for systemd
 - [ ] Document service manager interface for other backends
+
+## Install
+
+```sh
+make install # run `make uninstall` to uninstall it
+```
